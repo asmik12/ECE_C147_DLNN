@@ -30,7 +30,12 @@ def affine_forward(x, w, b):
   #   assignments.
   # ================================================================ #
 
-  pass
+  #reshape the input array x to a 2D array of shape (N, D)
+  N = x.shape[0]
+  x_reshaped = x.reshape(N, -1) #Flattens the input
+
+  #Compute the affine forward pass (wx+b)
+  out = np.dot(x_reshaped, w) + b
 
   # ================================================================ #
   # END YOUR CODE HERE
@@ -68,7 +73,16 @@ def affine_backward(dout, cache):
   # dw should be D x M; it relates to dout through multiplication with x, which is N x D after reshaping
   # db should be M; it is just the sum over dout examples
 
-  pass
+  x, w, b = cache
+
+  #Reshaping x to (N,D) so that computation becomes easier
+  N = x.shape[0]
+  x_reshaped = x.reshape(N, -1)
+
+  #Computing the gradients
+  dx = np.dot(dout, w.T).reshape(x.shape)   # Gradient wrt x
+  dw = np.dot(x_reshaped.T, dout)           # Gradient wrt w
+  db = np.sum(dout, axis=0)                 # Gradient wrt b (biases)
 
   # ================================================================ #
   # END YOUR CODE HERE
