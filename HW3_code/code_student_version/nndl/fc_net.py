@@ -47,7 +47,10 @@ class TwoLayerNet(object):
     #   dimensions of W2 should be (hidden_dims, num_classes)
     # ================================================================ #
 
-    pass
+    self.params['W1'] = np.random.randn(input_dim, hidden_dims) * weight_scale
+    self.params['b1'] = np.zeros(hidden_dims)
+    self.params['W2'] = np.random.randn(hidden_dims, num_classes) * weight_scale
+    self.params['b2'] = np.zeros(num_classes)    
 
     # ================================================================ #
     # END YOUR CODE HERE
