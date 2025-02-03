@@ -106,7 +106,8 @@ def relu_forward(x):
   #   Implement the ReLU forward pass.
   # ================================================================ #
 
-  pass
+  out = np.maximum(x, 0) #ReLu activation function: max(0, x)
+  
   # ================================================================ #
   # END YOUR CODE HERE
   # ================================================================ #
@@ -134,7 +135,7 @@ def relu_backward(dout, cache):
   # ================================================================ #
 
   # ReLU directs linearly to those > 0
-  pass
+  dx = dout * (x > 0)
     
   # ================================================================ #
   # END YOUR CODE HERE
