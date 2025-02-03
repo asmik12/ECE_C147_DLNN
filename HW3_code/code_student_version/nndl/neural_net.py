@@ -79,14 +79,15 @@ class TwoLayerNet(object):
     #   The output of the second FC layer is the output scores. Do not
     #   use a for loop in your implementation.
     # ================================================================ #
+    x_reshaped = X.reshape(N, -1)
+    layer1 = np.dot(x_reshaped, W1.T) + b1 # (H x 1)  - First layer output
+    relu_layer1 = np.maximum(layer1, 0) # (H x 1) - Applying ReLU
+    scores = np.dot(relu_layer1, W2.T) + b2 # (C x 1) - Computing final scores
 
-    pass
-    
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
 
-  
     # If the targets are not given then jump out, we're done
     if y is None:
       return scores
@@ -103,7 +104,11 @@ class TwoLayerNet(object):
     # ================================================================ #
 
     # scores is num_examples by num_classes
-    pass
+    exp_scores = np.exp(scores)
+    probs = exp_scores/np.sum(exp_scores, axis=1, keepdims=True)
+    correct_log_probs = -np.log(probs[range(N), y])
+    loss = np.mean(correct_log_probs)
+    
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -118,7 +123,20 @@ class TwoLayerNet(object):
     #   W1, and be of the same size as W1.
     # ================================================================ #
 
-    pass
+    dscores = probs
+    dscores[range(N), y] -= 1
+    dscores /= N
+
+    grads['W2'] = np.dot(relu_layer1, scores) + reg * W2
+    grads['b2'] = np.sum(dscores, axis=0)
+
+    #Backpropagation through ReLU
+    drelu = scores.dot(W2.T)
+    drelu[relu_layer1 <= 0] = 0
+
+    #Gradients for first layer
+    grads['W1'] = X.T.dot(drelu) + reg * W1
+    grads['b1'] = np.sum(drelu, axis=0)
 
     # ================================================================ #
     # END YOUR CODE HERE
