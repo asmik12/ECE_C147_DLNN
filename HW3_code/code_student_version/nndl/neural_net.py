@@ -268,17 +268,17 @@ class TwoLayerNet(object):
     W2, b2 = self.params['W2'], self.params['b2']
 
     #Forward pass through layers with final parameters
-    hidden_layer = X @ W1.T + b1                      # First layer output
-    relu_layer = np.maximum(hidden_layer, 0)          # Applying ReLU
-    scores = np.dot(relu_layer, W2.T) + b2            # Computing final scores
+    hidden_layer = X @ W1.T + b1                                  # First layer output
+    relu_layer = np.maximum(hidden_layer, 0)                      # Applying ReLU
+    scores = np.dot(relu_layer, W2.T) + b2                        # Computing final scores
 
 
     # scores is num_examples by num_classes
-    scores -= np.max(scores, axis=1, keepdims=True)    # subtract the max for stability purposes
-    exp_scores = np.exp(scores)                        # exponentiating the score
-    probs = exp_scores/np.sum(exp_scores, axis=1, keepdims=True)  #computing softmax probabilities
+    scores -= np.max(scores, axis=1, keepdims=True)                 # subtract the max for stability purposes
+    exp_scores = np.exp(scores)                                     # exponentiating the score
+    probs = exp_scores/np.sum(exp_scores, axis=1, keepdims=True)    #computing softmax probabilities
     
-    y_pred = np.argmax(probs, axis=1)
+    y_pred = np.argmax(probs, axis=1)                               # predictions are the index of most likely class
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
