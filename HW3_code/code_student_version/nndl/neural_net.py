@@ -101,7 +101,7 @@ class TwoLayerNet(object):
     #   total loss in teh variable loss.  Multiply the regularization
     #   loss by 0.5 (in addition to the factor reg).
     # ================================================================ #
-
+    #DOUBT: Computed loss with only scores, not softmax probabilities. Is that ok?
     # scores is num_examples by num_classes
     scores -= np.max(scores, axis=1, keepdims=True)               # Normalizing scores to avoid overflow
     exp_scores = np.exp(scores)                                   # exponentiating the scores (numerator of softmax)
@@ -143,8 +143,8 @@ class TwoLayerNet(object):
     grads['W2'] = dscores.T @ relu_layer + reg * W2            # Upstream gradient multiplied by other wire (relu_layer)
 
     #Backpropagation through ReLU
-    drelu = dscores @ W2                                       # Backprop through 
-    drelu[hidden_layer <= 0] = 0
+    drelu = dscores @ W2                                       # Backprop through multiplication gate
+    drelu[hidden_layer <= 0] = 0                               # Backprop through relu
 
     #Gradients for first layer
     grads['W1'] = drelu.T.dot(X) + reg * W1                     # Upstream gradient is mulitplied by other wire (X)
@@ -194,7 +194,7 @@ class TwoLayerNet(object):
       #   Create a minibatch by sampling batch_size samples randomly.
       # ================================================================ #
       
-      indices = np.random.choice(len(y), size = batch_size) #DOUBT: Replace true?
+      indices = np.random.choice(len(y), size = batch_size)
       X_batch = X[indices]
       y_batch = y[indices]
 
@@ -212,11 +212,10 @@ class TwoLayerNet(object):
       #   all parameters (i.e., W1, W2, b1, and b2).
       # ================================================================ #
 
-      loss, grads = self.loss(X_batch, y_batch)
-      self.params['W1'] =  grads['W1']
-      self.params['b1'] = grads['b1']
-      self.params['W2'] = grads['W2']
-      self.params['b2'] = grads['b2']
+      self.params['W1'] -= learning_rate * grads['W1']      #DOUBT: Why do we do this update like this?
+      self.params['b1'] -= learning_rate * grads['b1']
+      self.params['W2'] -= learning_rate * grads['W2']
+      self.params['b2'] -= learning_rate * grads['b2']
 
       # ================================================================ #
       # END YOUR CODE HERE
@@ -275,8 +274,9 @@ class TwoLayerNet(object):
 
 
     # scores is num_examples by num_classes
-    exp_scores = np.exp(scores - np.max(scores, axis=1))                   #subtract the max for stability purposes
-    probs = exp_scores/np.sum(exp_scores, axis=1, keepdims=True)
+    scores -= np.max(scores, axis=1, keepdims=True)    # subtract the max for stability purposes
+    exp_scores = np.exp(scores)                        # exponentiating the score
+    probs = exp_scores/np.sum(exp_scores, axis=1, keepdims=True)  #computing softmax probabilities
     
     y_pred = np.argmax(probs, axis=1)
     # ================================================================ #
