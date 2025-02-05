@@ -136,19 +136,19 @@ class TwoLayerNet(object):
     # Computing dL/dscores
     dscores = softmax_probs                                    # setting up an array for dl/dscores
     dscores[range(N), y] -= 1                                  # DOUBT!!!  
-    dscores /= N
+    dscores /= N                                               # DOUBT : Why are we doing this?
 
     #Backpropagation through second FC layer
     grads['b2'] = np.sum(dscores, axis=0)                      # Summing across all classes for a sample - CORRECT
-    grads['W2'] = np.dot(relu_layer.T, dscores)
+    grads['W2'] = dscores.T @ relu_layer + reg * W2            # Upstream gradient multiplied by other wire (relu_layer)
 
     #Backpropagation through ReLU
-    drelu = np.dot(dscores, W2)
-    drelu[relu_layer <= 0] = 0
+    drelu = dscores @ W2                                       # Backprop through 
+    drelu[hidden_layer <= 0] = 0
 
     #Gradients for first layer
-    grads['W1'] = drelu.T.dot(X)
-    grads['b1'] = np.sum(drelu, axis=0)
+    grads['W1'] = drelu.T.dot(X) + reg * W1                     # Upstream gradient is mulitplied by other wire (X)
+    grads['b1'] = np.sum(drelu, axis=0)                         # Summing across all classes for a sample - CORRECT       
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -268,16 +268,17 @@ class TwoLayerNet(object):
     W1, b1 = self.params['W1'], self.params['b1']
     W2, b2 = self.params['W2'], self.params['b2']
 
+    #Forward pass through layers with final parameters
+    hidden_layer = X @ W1.T + b1                      # First layer output
+    relu_layer = np.maximum(hidden_layer, 0)          # Applying ReLU
+    scores = np.dot(relu_layer, W2.T) + b2            # Computing final scores
 
-    layer1 = X @ W1.T + b1 # First layer output
-    relu_layer1 = np.maximum(layer1, 0) # Applying ReLU
-    scores = np.dot(relu_layer1, W2.T) + b2 # Computing final scores
 
     # scores is num_examples by num_classes
-    exp_scores = np.exp(scores - np.max(scores, axis=1, keepdims=True)) #subtract the max for stability purposes
+    exp_scores = np.exp(scores - np.max(scores, axis=1))                   #subtract the max for stability purposes
     probs = exp_scores/np.sum(exp_scores, axis=1, keepdims=True)
     
-    y_pred = np.argmax(scores, axis=1)
+    y_pred = np.argmax(probs, axis=1)
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
