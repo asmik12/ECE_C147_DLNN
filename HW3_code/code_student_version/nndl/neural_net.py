@@ -79,10 +79,9 @@ class TwoLayerNet(object):
     #   The output of the second FC layer is the output scores. Do not
     #   use a for loop in your implementation.
     # ================================================================ #
-    x_reshaped = X.reshape(N, -1)
-    layer1 = np.dot(x_reshaped, W1.T) + b1 # (H x 1)  - First layer output
-    relu_layer1 = np.maximum(layer1, 0) # (H x 1) - Applying ReLU
-    scores = np.dot(relu_layer1, W2.T) + b2 # (C x 1) - Computing final scores
+    hidden_layer = X @ W1.T + b1                      # First layer output
+    relu_layer = np.maximum(hidden_layer, 0)          # Applying ReLU
+    scores = np.dot(relu_layer, W2.T) + b2            # Computing final scores
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -104,11 +103,20 @@ class TwoLayerNet(object):
     # ================================================================ #
 
     # scores is num_examples by num_classes
-    exp_scores = np.exp(scores)
-    probs = exp_scores/np.sum(exp_scores, axis=1, keepdims=True)
-    correct_log_probs = -np.log(probs[range(N), y])
-    loss = np.mean(correct_log_probs)
+    scores -= np.max(scores, axis=1, keepdims=True)               # Normalizing scores to avoid overflow
+    exp_scores = np.exp(scores)                                   # exponentiating the scores (numerator of softmax)
+
+    correct_class_score = scores[range(N), y]                     # Collecting scores for correct class for each sample
+    all_scores = np.log(np.sum(exp_scores, axis=1))               # Collecting the sum of all scores for each sample
+    difference = all_scores-correct_class_score                   # Difference between actual score, correct score = loss
+    data_loss = np.mean(difference)                               # Mean loss across all samples
+
+    #L2 Regularization for W1 and W2
+    reg_loss = 0.5 * reg * (np.sum(W1**2) + np.sum(W2**2))        # DOUBT???
     
+    #Total loss
+    loss = data_loss + reg_loss                                   # Total loss is sum of regularization and data loss
+
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -123,19 +131,23 @@ class TwoLayerNet(object):
     #   W1, and be of the same size as W1.
     # ================================================================ #
 
-    dscores = probs
-    dscores[range(N), y] -= 1
+    softmax_probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)            # Computing softmax probabilities
+
+    # Computing dL/dscores
+    dscores = softmax_probs                                    # setting up an array for dl/dscores
+    dscores[range(N), y] -= 1                                  # DOUBT!!!  
     dscores /= N
 
-    grads['W2'] = np.dot(relu_layer1, scores) + reg * W2
-    grads['b2'] = np.sum(dscores, axis=0)
+    #Backpropagation through second FC layer
+    grads['b2'] = np.sum(dscores, axis=0)                      # Summing across all classes for a sample - CORRECT
+    grads['W2'] = np.dot(relu_layer.T, dscores)
 
     #Backpropagation through ReLU
-    drelu = scores.dot(W2.T)
-    drelu[relu_layer1 <= 0] = 0
+    drelu = np.dot(dscores, W2)
+    drelu[relu_layer <= 0] = 0
 
     #Gradients for first layer
-    grads['W1'] = X.T.dot(drelu) + reg * W1
+    grads['W1'] = drelu.T.dot(X)
     grads['b1'] = np.sum(drelu, axis=0)
 
     # ================================================================ #
@@ -181,13 +193,16 @@ class TwoLayerNet(object):
       # YOUR CODE HERE:
       #   Create a minibatch by sampling batch_size samples randomly.
       # ================================================================ #
-      pass
+      
+      indices = np.random.choice(len(y), size = batch_size) #DOUBT: Replace true?
+      X_batch = X[indices]
+      y_batch = y[indices]
 
       # ================================================================ #
       # END YOUR CODE HERE
       # ================================================================ #
 
-       # Compute loss and gradients using the current minibatch
+      # Compute loss and gradients using the current minibatch
       loss, grads = self.loss(X_batch, y=y_batch, reg=reg)
       loss_history.append(loss)
 
@@ -197,7 +212,11 @@ class TwoLayerNet(object):
       #   all parameters (i.e., W1, W2, b1, and b2).
       # ================================================================ #
 
-      pass
+      loss, grads = self.loss(X_batch, y_batch)
+      self.params['W1'] =  grads['W1']
+      self.params['b1'] = grads['b1']
+      self.params['W2'] = grads['W2']
+      self.params['b2'] = grads['b2']
 
       # ================================================================ #
       # END YOUR CODE HERE
@@ -244,9 +263,21 @@ class TwoLayerNet(object):
     # YOUR CODE HERE:
     #   Predict the class given the input data.
     # ================================================================ #
-    pass
+    
+    #Unpack the variables
+    W1, b1 = self.params['W1'], self.params['b1']
+    W2, b2 = self.params['W2'], self.params['b2']
 
 
+    layer1 = X @ W1.T + b1 # First layer output
+    relu_layer1 = np.maximum(layer1, 0) # Applying ReLU
+    scores = np.dot(relu_layer1, W2.T) + b2 # Computing final scores
+
+    # scores is num_examples by num_classes
+    exp_scores = np.exp(scores - np.max(scores, axis=1, keepdims=True)) #subtract the max for stability purposes
+    probs = exp_scores/np.sum(exp_scores, axis=1, keepdims=True)
+    
+    y_pred = np.argmax(scores, axis=1)
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
