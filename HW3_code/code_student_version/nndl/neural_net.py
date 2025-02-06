@@ -34,6 +34,7 @@ class TwoLayerNet(object):
     - output_size: The number of classes C.
     """
     self.params = {}
+    np.random.seed(0)       #Setting random seed
     self.params['W1'] = std * np.random.randn(hidden_size, input_size)
     self.params['b1'] = np.zeros(hidden_size)
     self.params['W2'] = std * np.random.randn(output_size, hidden_size)
@@ -101,7 +102,7 @@ class TwoLayerNet(object):
     #   total loss in teh variable loss.  Multiply the regularization
     #   loss by 0.5 (in addition to the factor reg).
     # ================================================================ #
-    #DOUBT: Computed loss with only scores, not softmax probabilities. Is that ok?
+    
     # scores is num_examples by num_classes
     scores -= np.max(scores, axis=1, keepdims=True)               # Normalizing scores to avoid overflow
     exp_scores = np.exp(scores)                                   # exponentiating the scores (numerator of softmax)
@@ -112,7 +113,7 @@ class TwoLayerNet(object):
     data_loss = np.mean(difference)                               # Mean loss across all samples
 
     #L2 Regularization for W1 and W2
-    reg_loss = 0.5 * reg * (np.sum(W1**2) + np.sum(W2**2))        # DOUBT???
+    reg_loss = 0.5 * reg * (np.sum(W1**2) + np.sum(W2**2))        
     
     #Total loss
     loss = data_loss + reg_loss                                   # Total loss is sum of regularization and data loss
@@ -212,7 +213,7 @@ class TwoLayerNet(object):
       #   all parameters (i.e., W1, W2, b1, and b2).
       # ================================================================ #
 
-      self.params['W1'] -= learning_rate * grads['W1']      #DOUBT: Why do we do this update like this?
+      self.params['W1'] -= learning_rate * grads['W1']      
       self.params['b1'] -= learning_rate * grads['b1']
       self.params['W2'] -= learning_rate * grads['W2']
       self.params['b2'] -= learning_rate * grads['b2']
