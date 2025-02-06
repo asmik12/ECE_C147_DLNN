@@ -187,7 +187,12 @@ class FullyConnectedNet(object):
     #   so that each parameter has mean 0 and standard deviation weight_scale.
     # ================================================================ #
     
-    pass
+    hidden_dims.insert(0, input_dim)
+    hidden_dims.insert(-1, num_classes)
+
+    for i in range(1, len(hidden_dims)-1):
+      self.params[f'W{i}'] = np.random.normal(0, weight_scale, (hidden_dims[i-1], hidden_dims[i]))
+      self.params[f'b{i}'] = np.zeros(hidden_dims[i])
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -241,7 +246,25 @@ class FullyConnectedNet(object):
     #   scores as the variable "scores".
     # ================================================================ #
 
-    pass
+    num_layers = self.num_layers                              # The number of distinct hidden layers
+    caches = []
+    layer_outputs = [X]
+
+    for i in range(1, num_layers):
+      # Unpacking parameters
+      W = self.params[f"W{i}"]
+      b = self.params[f"b{i}"]
+
+      # Computing forward pass
+      if i != num_layers:
+        l, c = affine_relu_forward(layer_outputs[-1], W, b)
+      else:
+        l, c = affine_forward(layer_outputs[-1], W, b)
+
+      # Collecting caches and intermediate outputs for gradient computation
+      caches.append(c)
+      layer_outputs.append(l)
+    scores = layer_outputs[-1]      # Product of the forward pass
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -259,7 +282,24 @@ class FullyConnectedNet(object):
     #   Be sure your L2 regularization includes a 0.5 factor.
     # ================================================================ #
 
-    pass
+    loss, softmax_grad = softmax_loss(scores, y)            # Computing loss & softmax gradient
+    upstream_grad = softmax_grad
+
+    # Backpropagation & Regularization
+    for i in range(num_layers-1,0,-1):                        # Count backwards while backpropagating
+      # Unpacking parameters
+      W = self.params[f"W{i}"]
+
+      # Regularizing loss
+      loss += 0.5 * self.reg * np.linalg.norm(W)**2
+
+      # Backpropagating
+      dh, dw, db = affine_relu_backward(upstream_grad, caches[i-1])   # Else aackward through affine & relu
+      
+      upstream_grad = dh
+
+      # Storing gradients
+      grads[f"W{i}"], grads[f"b{i}"] = dw + self.reg * W, db    
 
     # ================================================================ #
     # END YOUR CODE HERE
