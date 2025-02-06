@@ -46,7 +46,7 @@ class TwoLayerNet(object):
     #   The dimensions of W1 should be (input_dim, hidden_dim) and the
     #   dimensions of W2 should be (hidden_dims, num_classes)
     # ================================================================ #
-                                                                                        # DOUBT: Can we sample from normal dist?
+                                                                                        
     self.params['W1'] = np.random.normal(0, weight_scale, (input_dim, hidden_dims))     # Sample from Normal dist.
     self.params['b1'] = np.zeros(hidden_dims)                                           # Initialize b1 to all 0s
     self.params['W2'] = np.random.normal(0, weight_scale, (hidden_dims, num_classes))   # Sample from Normal dist.
@@ -186,7 +186,7 @@ class FullyConnectedNet(object):
     #   biases are initialized to zero and the weights are initialized
     #   so that each parameter has mean 0 and standard deviation weight_scale.
     # ================================================================ #
-    
+    np.random.seed(0)               #Setting random seed
     hidden_dims.insert(0, input_dim)
     hidden_dims.insert(-1, num_classes)
 
