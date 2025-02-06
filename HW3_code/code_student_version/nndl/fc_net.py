@@ -46,11 +46,11 @@ class TwoLayerNet(object):
     #   The dimensions of W1 should be (input_dim, hidden_dim) and the
     #   dimensions of W2 should be (hidden_dims, num_classes)
     # ================================================================ #
-
-    self.params['W1'] = np.random.randn(input_dim, hidden_dims) * weight_scale
-    self.params['b1'] = np.zeros(hidden_dims)
-    self.params['W2'] = np.random.randn(hidden_dims, num_classes) * weight_scale
-    self.params['b2'] = np.zeros(num_classes)    
+                                                                                        # DOUBT: Can we sample from normal dist?
+    self.params['W1'] = np.random.normal(0, weight_scale, (input_dim, hidden_dims))     # Sample from Normal dist.
+    self.params['b1'] = np.zeros(hidden_dims)                                           # Initialize b1 to all 0s
+    self.params['W2'] = np.random.normal(0, weight_scale, (hidden_dims, num_classes))   # Sample from Normal dist.
+    self.params['b2'] = np.zeros(num_classes)                                           # Initialize b2 to all 0s
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -84,7 +84,14 @@ class TwoLayerNet(object):
     #   you prior implemented.
     # ================================================================ #    
     
-    pass
+    #Unpacking the variables
+    w1, b1 = self.params['W1'], self.params['b1']
+    w2, b2 = self.params['W2'], self.params['b2']
+
+
+    hidden_layer, cache_hidden_layer = affine_relu_forward(X, w1, b1)            # Affine --> ReLu -->
+    scores, cache_output_layer = affine_forward(hidden_layer, w2, b2)            # Affine
+
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -108,13 +115,20 @@ class TwoLayerNet(object):
     #
     #   And be sure to use the layers you prior implemented.
     # ================================================================ #    
-    
-    pass
+    loss, softmax_grad = softmax_loss(scores, y)            # Computing softmax loss
+    loss += 0.5 * self.reg*(np.linalg.norm(w1)**2 + np.linalg.norm(w2)**2)
+
+    # Backpropagating
+    dhidden_layer, dw2, db2 = affine_backward(softmax_grad, cache_output_layer)
+    dx, dw1, db1 = affine_relu_backward(dhidden_layer, cache_hidden_layer)
+
+    # Storing Gradients in dictionary
+    grads['W1'], grads['b1'] = dw1 + self.reg * w1, db1                     # Regularized gradient update for w1, w2
+    grads['W2'], grads['b2'] = dw2 + self.reg * w2, db2                     # Normal gradient update for b1, b2
 
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
-    
     return loss, grads
 
 

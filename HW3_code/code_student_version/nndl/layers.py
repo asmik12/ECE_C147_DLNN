@@ -78,7 +78,7 @@ def affine_backward(dout, cache):
   #Reshaping x to (N,D) so that computation becomes easier
   N = x.shape[0]
   x_reshaped = x.reshape(N, -1)
-
+  
   #Computing the gradients
   dx = np.dot(dout, w.T).reshape(x.shape)   # Gradient wrt x
   dw = np.dot(x_reshaped.T, dout)           # Gradient wrt w
