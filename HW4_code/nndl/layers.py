@@ -192,7 +192,16 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     #         the 'cache' variable.
     # ================================================================ #
 
+    sample_mean = np.mean(x, axis=0)          # Compute the sample mean
+    sample_var = np.var(x, axis=0)       # Compute the sample variance
 
+    x_normalized = (x-sample_mean)/np.sqrt(sample_var + eps)   # Normalize the unit activations
+    out = gamma * x_normalized + beta   # Scale and shift the normalized activations
+
+    running_mean = momentum * running_mean + (1 - momentum) * sample_mean     # Updating running mean
+    running_var = momentum * running_var + (1 - momentum) * sample_var        # Updating running var
+
+    cache = (x, x_normalized, sample_mean, sample_var, gamma, beta, eps) # DOUBT: Do we need all this?
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -206,7 +215,9 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     #   the running mean and variance, and then scale and shift appropriately.
     #   Store the output as 'out'.
     # ================================================================ #
-
+    
+    x_normalized = (x-running_mean)/np.sqrt(running_var + eps)    # Normalizing using running mean and variance
+    out = gamma * x_normalized + beta                             # Scale and shift normalized activation
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -284,12 +295,12 @@ def dropout_forward(x, dropout_param):
     #   Store the masked and scaled activations in out, and store the 
     #   dropout mask as the variable mask.
     # ================================================================ #
-
+    pass
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
     
-  elif mode == 'test':
+  #elif mode == 'test':
     
     # ================================================================ #
     # YOUR CODE HERE:
@@ -322,11 +333,11 @@ def dropout_backward(dout, cache):
     # YOUR CODE HERE:
     #   Implement the inverted dropout backward pass during training time.
     # ================================================================ #
-
+    pass
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
-  elif mode == 'test':
+  #elif mode == 'test':
     # ================================================================ #
     # YOUR CODE HERE:
     #   Implement the inverted dropout backward pass during test time.
