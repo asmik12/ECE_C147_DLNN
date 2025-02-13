@@ -334,18 +334,22 @@ def dropout_forward(x, dropout_param):
     #   Store the masked and scaled activations in out, and store the 
     #   dropout mask as the variable mask.
     # ================================================================ #
-    pass
+    
+    # Create a dropout mask (1 with probability p, 0 with probability 1-p)
+    mask = (np.random.rand(*x.shape) < p)/p   # normalization by p for inverted dropout
+    out = x * mask      # Applying dropout mask
+
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
     
-  #elif mode == 'test':
+  elif mode == 'test':
     
     # ================================================================ #
     # YOUR CODE HERE:
     #   Implement the inverted dropout forward pass during test time.
     # ================================================================ #
-
+    out = x # no dropouts in test mode
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
