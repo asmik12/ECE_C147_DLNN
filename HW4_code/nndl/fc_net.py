@@ -283,7 +283,7 @@ class FullyConnectedNet(object):
         
         #Computing forward pass
         if i != num_layers:
-          l, c = affine_batchnorm_relu_forward(last_output, W, b, gamma, beta, self.bn_params[i-1])
+          l, c = affine_batchnorm_relu_dropout_forward(last_output, W, b, gamma, beta, self.bn_params[i-1], dropout_params=self.dropout_param)
 
         else:
           l, c = affine_forward(last_output, W, b)
@@ -298,7 +298,7 @@ class FullyConnectedNet(object):
 
         # Computing forward pass
         if i != num_layers:
-          l, c = affine_relu_forward(last_output, W, b)
+          l, c = affine_relu_dropout_forward(last_output, W, b, dropout_param=self.dropout_param)
         else:
           l, c = affine_forward(last_output, W, b)
 
@@ -342,9 +342,17 @@ class FullyConnectedNet(object):
       if i == num_layers:
         dh, dw, db = affine_backward(upstream_grad, caches[-1])
       else:
-        dh, dw, db, dgamma, dbeta = affine_batchnorm_relu_backward(upstream_grad, caches[i-1])
-        grads[f"gamma{i}"], grads[f"beta{i}"] = dgamma, dbeta
-      
+        if self.use_batchnorm and self.use_dropout:
+          dh, dw, db, dgamma, dbeta = affine_batchnorm_relu_dropout_backward(upstream_grad, caches[i-1])
+          grads[f"gamma{i}"], grads[f"beta{i}"] = dgamma, dbeta
+        elif self.use_batchnorm:
+          dh, dw, db, dgamma, dbeta = affine_batchnorm_relu_backward(upstream_grad, caches[i-1])
+          grads[f"gamma{i}"], grads[f"beta{i}"] = dgamma, dbeta
+        elif self.use_dropout:
+          dh, dw, db = affine_relu_dropout_backward(upstream_grad, caches[i-1])
+        else:
+          dh, dw, db = affine_relu_backward(upstream_grad, caches[i-1])
+  
       upstream_grad = dh
       
       grads[f"W{i}"], grads[f"b{i}"] = dw + self.reg * W, db    # Storing gradients

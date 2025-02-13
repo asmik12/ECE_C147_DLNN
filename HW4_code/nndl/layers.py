@@ -376,16 +376,16 @@ def dropout_backward(dout, cache):
     # YOUR CODE HERE:
     #   Implement the inverted dropout backward pass during training time.
     # ================================================================ #
-    pass
+    dx = dout * mask
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
-  #elif mode == 'test':
+  elif mode == 'test':
     # ================================================================ #
     # YOUR CODE HERE:
     #   Implement the inverted dropout backward pass during test time.
     # ================================================================ #
-
+    dx = dout
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
