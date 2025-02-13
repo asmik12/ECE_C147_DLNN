@@ -1,8 +1,18 @@
 import numpy as np
+import pdb
 
 from .layers import *
 from .layer_utils import *
 
+""" 
+This code was originally written for CS 231n at Stanford University
+(cs231n.stanford.edu).  It has been modified in various areas for use in the
+ECE 239AS class at UCLA.  This includes the descriptions of what code to
+implement as well as some slight potential changes in variable names to be
+consistent with class nomenclature.  We thank Justin Johnson & Serena Yeung for
+permission to use this code.  To see the original version, please visit
+cs231n.stanford.edu.  
+"""
 
 class TwoLayerNet(object):
   """
@@ -21,7 +31,7 @@ class TwoLayerNet(object):
   """
   
   def __init__(self, input_dim=3*32*32, hidden_dims=100, num_classes=10,
-               dropout=0, weight_scale=1e-3, reg=0.0):
+               dropout=1, weight_scale=1e-3, reg=0.0):
     """
     Initialize a new network.
 
@@ -46,11 +56,7 @@ class TwoLayerNet(object):
     #   The dimensions of W1 should be (input_dim, hidden_dim) and the
     #   dimensions of W2 should be (hidden_dims, num_classes)
     # ================================================================ #
-                                                                                        
-    self.params['W1'] = np.random.normal(0, weight_scale, (input_dim, hidden_dims))     # Sample from Normal dist.
-    self.params['b1'] = np.zeros(hidden_dims)                                           # Initialize b1 to all 0s
-    self.params['W2'] = np.random.normal(0, weight_scale, (hidden_dims, num_classes))   # Sample from Normal dist.
-    self.params['b2'] = np.zeros(num_classes)                                           # Initialize b2 to all 0s
+
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -84,14 +90,6 @@ class TwoLayerNet(object):
     #   you prior implemented.
     # ================================================================ #    
     
-    #Unpacking the variables
-    w1, b1 = self.params['W1'], self.params['b1']
-    w2, b2 = self.params['W2'], self.params['b2']
-
-
-    hidden_layer, cache_hidden_layer = affine_relu_forward(X, w1, b1)            # Affine --> ReLu -->
-    scores, cache_output_layer = affine_forward(hidden_layer, w2, b2)            # Affine
-
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -115,20 +113,11 @@ class TwoLayerNet(object):
     #
     #   And be sure to use the layers you prior implemented.
     # ================================================================ #    
-    loss, softmax_grad = softmax_loss(scores, y)            # Computing softmax loss
-    loss += 0.5 * self.reg*(np.linalg.norm(w1)**2 + np.linalg.norm(w2)**2)
-
-    # Backpropagating
-    dhidden_layer, dw2, db2 = affine_backward(softmax_grad, cache_output_layer)
-    dx, dw1, db1 = affine_relu_backward(dhidden_layer, cache_hidden_layer)
-
-    # Storing Gradients in dictionary
-    grads['W1'], grads['b1'] = dw1 + self.reg * w1, db1                     # Regularized gradient update for w1, w2
-    grads['W2'], grads['b2'] = dw2 + self.reg * w2, db2                     # Normal gradient update for b1, b2
-
+    
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
+    
     return loss, grads
 
 
@@ -149,7 +138,7 @@ class FullyConnectedNet(object):
   """
 
   def __init__(self, hidden_dims, input_dim=3*32*32, num_classes=10,
-               dropout=0, use_batchnorm=False, reg=0.0,
+               dropout=1, use_batchnorm=False, reg=0.0,
                weight_scale=1e-2, dtype=np.float32, seed=None):
     """
     Initialize a new FullyConnectedNet.
@@ -158,7 +147,7 @@ class FullyConnectedNet(object):
     - hidden_dims: A list of integers giving the size of each hidden layer.
     - input_dim: An integer giving the size of the input.
     - num_classes: An integer giving the number of classes to classify.
-    - dropout: Scalar between 0 and 1 giving dropout strength. If dropout=0 then
+    - dropout: Scalar between 0 and 1 giving dropout strength. If dropout=1 then
       the network should not use dropout at all.
     - use_batchnorm: Whether or not the network should use batch normalization.
     - reg: Scalar giving L2 regularization strength.
@@ -172,7 +161,7 @@ class FullyConnectedNet(object):
       model.
     """
     self.use_batchnorm = use_batchnorm
-    self.use_dropout = dropout > 0
+    self.use_dropout = dropout < 1
     self.reg = reg
     self.num_layers = 1 + len(hidden_dims)
     self.dtype = dtype
@@ -185,14 +174,14 @@ class FullyConnectedNet(object):
     #   weights and biases of layer i are Wi and bi. The
     #   biases are initialized to zero and the weights are initialized
     #   so that each parameter has mean 0 and standard deviation weight_scale.
+    #
+    #   BATCHNORM: Initialize the gammas of each layer to 1 and the beta
+    #   parameters to zero.  The gamma and beta parameters for layer 1 should
+    #   be self.params['gamma1'] and self.params['beta1'].  For layer 2, they
+    #   should be gamma2 and beta2, etc. Only use batchnorm if self.use_batchnorm 
+    #   is true and DO NOT do batch normalize the output scores.
     # ================================================================ #
-    np.random.seed(5)               #Setting random seed
-    hidden_dims.insert(0, input_dim)
-    hidden_dims.insert(-1, num_classes)
-
-    for i in range(1, len(hidden_dims)-1):
-      self.params[f'W{i}'] = np.random.normal(0, weight_scale, (hidden_dims[i-1], hidden_dims[i]))
-      self.params[f'b{i}'] = np.zeros(hidden_dims[i])
+    
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -236,7 +225,7 @@ class FullyConnectedNet(object):
       self.dropout_param['mode'] = mode   
     if self.use_batchnorm:
       for bn_param in self.bn_params:
-        bn_param[mode] = mode
+        bn_param['mode'] = mode
 
     scores = None
     
@@ -244,27 +233,15 @@ class FullyConnectedNet(object):
     # YOUR CODE HERE:
     #   Implement the forward pass of the FC net and store the output
     #   scores as the variable "scores".
+    #
+    #   BATCHNORM: If self.use_batchnorm is true, insert a bathnorm layer
+    #   between the affine_forward and relu_forward layers.  You may
+    #   also write an affine_batchnorm_relu() function in layer_utils.py.
+    #
+    #   DROPOUT: If dropout is non-zero, insert a dropout layer after
+    #   every ReLU layer.
     # ================================================================ #
 
-    num_layers = self.num_layers                              # The number of distinct hidden layers
-    caches = []
-    layer_outputs = [X]
-
-    for i in range(1, num_layers):
-      # Unpacking parameters
-      W = self.params[f"W{i}"]
-      b = self.params[f"b{i}"]
-
-      # Computing forward pass
-      if i != num_layers:
-        l, c = affine_relu_forward(layer_outputs[-1], W, b)
-      else:
-        l, c = affine_forward(layer_outputs[-1], W, b)
-
-      # Collecting caches and intermediate outputs for gradient computation
-      caches.append(c)
-      layer_outputs.append(l)
-    scores = layer_outputs[-1]      # Product of the forward pass
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -280,28 +257,16 @@ class FullyConnectedNet(object):
     #   Implement the backwards pass of the FC net and store the gradients
     #   in the grads dict, so that grads[k] is the gradient of self.params[k]
     #   Be sure your L2 regularization includes a 0.5 factor.
+    #
+    #   BATCHNORM: Incorporate the backward pass of the batchnorm.
+    #
+    #   DROPOUT: Incorporate the backward pass of dropout.
     # ================================================================ #
 
-    loss, softmax_grad = softmax_loss(scores, y)            # Computing loss & softmax gradient
-    upstream_grad = softmax_grad
 
-    # Backpropagation & Regularization
-    for i in range(num_layers-1,0,-1):                        # Count backwards while backpropagating
-      # Unpacking parameters
-      W = self.params[f"W{i}"]
-
-      # Regularizing loss
-      loss += 0.5 * self.reg * np.linalg.norm(W)**2
-
-      # Backpropagating
-      dh, dw, db = affine_relu_backward(upstream_grad, caches[i-1])   # Else aackward through affine & relu
-      
-      upstream_grad = dh
-
-      # Storing gradients
-      grads[f"W{i}"], grads[f"b{i}"] = dw + self.reg * W, db    
 
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
+    
     return loss, grads
