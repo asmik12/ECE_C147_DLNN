@@ -294,7 +294,7 @@ class FullyConnectedNet(object):
       loss += 0.5 * self.reg * np.linalg.norm(W)**2
 
       # Backpropagating
-      dh, dw, db = affine_relu_backward(upstream_grad, caches[i-1])   # Else aackward through affine & relu
+      dh, dw, db = affine_batchnorm_relu_backward(upstream_grad, caches[i-1])   # Else aackward through affine & relu
       
       upstream_grad = dh
 

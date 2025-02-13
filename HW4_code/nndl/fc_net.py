@@ -57,6 +57,10 @@ class TwoLayerNet(object):
     #   dimensions of W2 should be (hidden_dims, num_classes)
     # ================================================================ #
 
+    self.params['W1'] = np.random.normal(0, weight_scale, (input_dim, hidden_dims))     # Sample from Normal dist.
+    self.params['b1'] = np.zeros(hidden_dims)                                           # Initialize b1 to all 0s
+    self.params['W2'] = np.random.normal(0, weight_scale, (hidden_dims, num_classes))   # Sample from Normal dist.
+    self.params['b2'] = np.zeros(num_classes)                                           # Initialize b2 to all 0s
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -89,7 +93,13 @@ class TwoLayerNet(object):
     #   the class scores as the variable 'scores'.  Be sure to use the layers
     #   you prior implemented.
     # ================================================================ #    
-    
+    #Unpacking the variables
+    w1, b1 = self.params['W1'], self.params['b1']
+    w2, b2 = self.params['W2'], self.params['b2']
+
+
+    hidden_layer, cache_hidden_layer = affine_relu_forward(X, w1, b1)            # Affine --> ReLu -->
+    scores, cache_output_layer = affine_forward(hidden_layer, w2, b2)            # Affine
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -113,7 +123,16 @@ class TwoLayerNet(object):
     #
     #   And be sure to use the layers you prior implemented.
     # ================================================================ #    
-    
+    loss, softmax_grad = softmax_loss(scores, y)            # Computing softmax loss
+    loss += 0.5 * self.reg*(np.linalg.norm(w1)**2 + np.linalg.norm(w2)**2)
+
+    # Backpropagating
+    dhidden_layer, dw2, db2 = affine_backward(softmax_grad, cache_output_layer)
+    dx, dw1, db1 = affine_relu_backward(dhidden_layer, cache_hidden_layer)
+
+    # Storing Gradients in dictionary
+    grads['W1'], grads['b1'] = dw1 + self.reg * w1, db1                     # Regularized gradient update for w1, w2
+    grads['W2'], grads['b2'] = dw2 + self.reg * w2, db2                     # Normal gradient update for b1, b2
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -182,6 +201,16 @@ class FullyConnectedNet(object):
     #   is true and DO NOT do batch normalize the output scores.
     # ================================================================ #
     
+    hidden_dims.append(num_classes)
+    hidden_dims.insert(0, input_dim)
+
+    for i in range(1, self.num_layers + 1):
+      self.params[f"W{i}"] = np.random.normal(0, weight_scale, (hidden_dims[i-1], hidden_dims[i]))
+      self.params[f"b{i}"] = np.zeros(hidden_dims[i])
+
+      if self.use_batchnorm:                                    # If self.use_batchnorm is true
+        self.params[f"gamma{i}"] = np.ones(hidden_dims[i])      # Initialize the gammas of each layer to 1 
+        self.params[f"beta{i}"] = np.zeros(hidden_dims[i])      # Initialize the bets of each layer to 0
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -242,6 +271,42 @@ class FullyConnectedNet(object):
     #   every ReLU layer.
     # ================================================================ #
 
+    num_layers = self.num_layers                              # The number of distinct hidden layers
+    last_output = X
+    caches = []
+    if self.use_batchnorm:
+
+      for i in range(1, num_layers+1):
+        # Unpacking parameters
+        W, b = self.params[f"W{i}"], self.params[f"b{i}"]
+        gamma, beta = self.params[f"gamma{i}"], self.params[f"beta{i}"]
+        
+        #Computing forward pass
+        if i != num_layers:
+          l, c = affine_batchnorm_relu_forward(last_output, W, b, gamma, beta, self.bn_params[i-1])
+
+        else:
+          l, c = affine_forward(last_output, W, b)
+        caches.append(c)
+        last_output = l
+
+    else:
+      
+      for i in range(1, num_layers+1):
+        # Unpacking parameters
+        W, b = self.params[f"W{i}"], self.params[f"b{i}"]
+
+        # Computing forward pass
+        if i != num_layers:
+          l, c = affine_relu_forward(last_output, W, b)
+        else:
+          l, c = affine_forward(last_output, W, b)
+
+        # Collecting caches and intermediate outputs for gradient computation
+        caches.append(c)
+        last_output = l
+
+    scores = last_output      # Product of the forward pass
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -262,8 +327,28 @@ class FullyConnectedNet(object):
     #
     #   DROPOUT: Incorporate the backward pass of dropout.
     # ================================================================ #
+    loss, softmax_grad = softmax_loss(scores, y)            # Computing loss & softmax gradient
+    upstream_grad = softmax_grad
+    
+    # Backpropagation & Regularization
+    for i in range(num_layers,0,-1):                        # Count backwards while backpropagating
+      # Unpacking parameters
+      W = self.params[f"W{i}"]
 
+      # Regularizing loss
+      loss += 0.5 * self.reg * np.linalg.norm(W)**2
 
+      # Backpropagating
+      if i == num_layers:
+        dh, dw, db = affine_backward(upstream_grad, caches[-1])
+      else:
+        dh, dw, db, dgamma, dbeta = affine_batchnorm_relu_backward(upstream_grad, caches[i-1])
+        grads[f"gamma{i}"], grads[f"beta{i}"] = dgamma, dbeta
+      
+      upstream_grad = dh
+      
+      grads[f"W{i}"], grads[f"b{i}"] = dw + self.reg * W, db    # Storing gradients
+      
 
     # ================================================================ #
     # END YOUR CODE HERE

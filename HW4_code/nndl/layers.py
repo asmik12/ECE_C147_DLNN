@@ -37,7 +37,12 @@ def affine_forward(x, w, b):
   #   assignments.
   # ================================================================ #
 
+  #reshape the input array x to a 2D array of shape (N, D)
+  N = x.shape[0]
+  x_reshaped = x.reshape(N, -1) #Flattens the input
 
+  #Compute the affine forward pass (wx+b)
+  out = np.dot(x_reshaped, w) + b
 
   # ================================================================ #
   # END YOUR CODE HERE
@@ -75,8 +80,21 @@ def affine_backward(dout, cache):
   #   dw should be D x M; it relates to dout through multiplication with x, which is N x D after reshaping
   #   db should be M; it is just the sum over dout examples
   # ================================================================ #
+  # dout is N x M
+  # dx should be N x d1 x ... x dk; it relates to dout through multiplication with w, which is D x M
+  # dw should be D x M; it relates to dout through multiplication with x, which is N x D after reshaping
+  # db should be M; it is just the sum over dout examples
 
+  x, w, b = cache
 
+  #Reshaping x to (N,D) so that computation becomes easier
+  N = x.shape[0]
+  x_reshaped = x.reshape(N, -1)
+  
+  #Computing the gradients
+  dx = np.dot(dout, w.T).reshape(x.shape)   # Gradient wrt x
+  dw = np.dot(x_reshaped.T, dout)           # Gradient wrt w
+  db = np.sum(dout, axis=0)                 # Gradient wrt b (biases)
   # ================================================================ #
   # END YOUR CODE HERE
   # ================================================================ #
@@ -98,7 +116,7 @@ def relu_forward(x):
   # YOUR CODE HERE:
   #   Implement the ReLU forward pass.
   # ================================================================ #
-
+  out = np.maximum(x, 0) #ReLu activation function: max(0, x)
   # ================================================================ #
   # END YOUR CODE HERE
   # ================================================================ #
@@ -125,6 +143,8 @@ def relu_backward(dout, cache):
   #   Implement the ReLU backward pass
   # ================================================================ #
 
+  #ReLU directs linearly to those > 0
+  dx = dout * (x > 0)
     
   # ================================================================ #
   # END YOUR CODE HERE
@@ -255,6 +275,25 @@ def batchnorm_backward(dout, cache):
   # YOUR CODE HERE:
   #   Implement the batchnorm backward pass, calculating dx, dgamma, and dbeta.
   # ================================================================ #
+
+  x, x_normalized, sample_mean, sample_var, gamma, beta, eps = cache      # Unpacking the variables
+  N, D = dout.shape
+
+  dbeta = np.sum(dout, axis = 0)                    # dbeta is the same as dL/dy = dout
+  dgamma = np.sum(dout * x_normalized, axis = 0)    # dgamma is dout multiplied by the other wire (x_normalized)
+
+  # Gradient wrt x_normalized
+  dx_normalized = dout * gamma
+
+  # Gradient wrt sample_var
+  temp = -0.5 * 1/(sample_var + eps)**1.5 * (x - sample_mean) * dx_normalized
+  dsample_var = np.sum(temp, axis = 0)
+
+  #Gradient wrt sample mean
+  dsample_mean = -1/np.sqrt(sample_var+eps) * np.sum(dx_normalized, axis=0)
+
+  #Gradient wrt x
+  dx = 1/np.sqrt(sample_var+ eps) * dx_normalized + 2*(x - sample_mean)/N * dsample_var + 1/N * dsample_mean
 
   # ================================================================ #
   # END YOUR CODE HERE
