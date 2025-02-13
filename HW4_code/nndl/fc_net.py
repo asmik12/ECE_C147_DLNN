@@ -283,7 +283,10 @@ class FullyConnectedNet(object):
         
         #Computing forward pass
         if i != num_layers:
-          l, c = affine_batchnorm_relu_dropout_forward(last_output, W, b, gamma, beta, self.bn_params[i-1], dropout_params=self.dropout_param)
+          if self.use_dropout:
+            l, c = affine_batchnorm_relu_dropout_forward(last_output, W, b, gamma, beta, self.bn_params[i-1], dropout_params=self.dropout_param)
+          else:
+            l,c = affine_batchnorm_relu_forward(last_output, W, b, gamma, beta, self.bn_params[i-1])
 
         else:
           l, c = affine_forward(last_output, W, b)
@@ -298,7 +301,10 @@ class FullyConnectedNet(object):
 
         # Computing forward pass
         if i != num_layers:
-          l, c = affine_relu_dropout_forward(last_output, W, b, dropout_param=self.dropout_param)
+          if self.use_dropout:
+            l, c = affine_relu_dropout_forward(last_output, W, b, dropout_param=self.dropout_param)
+          else:
+            l,c = affine_relu_forward(last_output, W, b)
         else:
           l, c = affine_forward(last_output, W, b)
 
@@ -342,15 +348,15 @@ class FullyConnectedNet(object):
       if i == num_layers:
         dh, dw, db = affine_backward(upstream_grad, caches[-1])
       else:
-        if self.use_batchnorm and self.use_dropout:
+        if self.use_batchnorm and self.use_dropout:                           #BatchNorm yes, Dropout yes
           dh, dw, db, dgamma, dbeta = affine_batchnorm_relu_dropout_backward(upstream_grad, caches[i-1])
           grads[f"gamma{i}"], grads[f"beta{i}"] = dgamma, dbeta
-        elif self.use_batchnorm:
+        elif self.use_batchnorm:                                              #BatchNorm yes, Dropout no
           dh, dw, db, dgamma, dbeta = affine_batchnorm_relu_backward(upstream_grad, caches[i-1])
           grads[f"gamma{i}"], grads[f"beta{i}"] = dgamma, dbeta
-        elif self.use_dropout:
+        elif self.use_dropout:                                                #BatchNorm no, Dropout yes
           dh, dw, db = affine_relu_dropout_backward(upstream_grad, caches[i-1])
-        else:
+        else:                                                                 #BatchNorm no, Dropout no
           dh, dw, db = affine_relu_backward(upstream_grad, caches[i-1])
   
       upstream_grad = dh
