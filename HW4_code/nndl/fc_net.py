@@ -203,12 +203,13 @@ class FullyConnectedNet(object):
     
     hidden_dims.append(num_classes)
     hidden_dims.insert(0, input_dim)
+    num_layers = len(hidden_dims)
 
-    for i in range(1, self.num_layers + 1):
+    for i in range(1, num_layers):
       self.params[f"W{i}"] = np.random.normal(0, weight_scale, (hidden_dims[i-1], hidden_dims[i]))
       self.params[f"b{i}"] = np.zeros(hidden_dims[i])
 
-      if self.use_batchnorm:                                    # If self.use_batchnorm is true
+      if self.use_batchnorm:         # If self.use_batchnorm is true
         self.params[f"gamma{i}"] = np.ones(hidden_dims[i])      # Initialize the gammas of each layer to 1 
         self.params[f"beta{i}"] = np.zeros(hidden_dims[i])      # Initialize the bets of each layer to 0
 

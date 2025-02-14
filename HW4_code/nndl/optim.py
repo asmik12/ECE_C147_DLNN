@@ -75,7 +75,13 @@ def sgd_momentum(w, dw, config=None):
   #   Implement the momentum update formula.  Return the updated weights
   #   as next_w, and the updated velocity as v.
   # ================================================================ #
+  # Unpacking the variables
+  alpha = config['momentum']
+  epsilon = config['learning_rate']
 
+  #Compute the gradient - in this case its given as dw
+  v = alpha * v - epsilon * dw          #Update v
+  next_w = w + v                              #Update weight
   # ================================================================ #
   # END YOUR CODE HERE
   # ================================================================ #
@@ -105,6 +111,13 @@ def sgd_nesterov_momentum(w, dw, config=None):
   #   Implement the momentum update formula.  Return the updated weights
   #   as next_w, and the updated velocity as v.
   # ================================================================ #
+  # Unpacking the variables
+  alpha = config['momentum']
+  epsilon= config['learning_rate']
+
+  v_new = alpha * v - epsilon * dw          # Computing v_new
+  next_w = w + v_new + alpha * (v_new - v)  # Computing next_w
+  v = v_new                                 # Updating v
 
   # ================================================================ #
   # END YOUR CODE HERE
@@ -141,6 +154,16 @@ def rmsprop(w, dw, config=None):
   #   moment gradients, so they can be used for future gradients. Concretely,
   #   config['a'] corresponds to "a" in the lecture notes.
   # ================================================================ #
+  
+  # Unpacking variables
+  a, epsilon = config['a'], config['epsilon']
+  beta, lr = config['decay_rate'], config['learning_rate'] 
+
+  a = beta * a + (1-beta)*(dw**2)
+  config['a'] = a
+
+  next_w = w - (lr/(np.sqrt(a)+epsilon)) * dw
+  
 
   # ================================================================ #
   # END YOUR CODE HERE
@@ -181,6 +204,29 @@ def adam(w, dw, config=None):
   #   moment gradients, and in config['v'] the moving average of the
   #   first moments.  Finally, store in config['t'] the increasing time.
   # ================================================================ #
+
+  t = config['t'] + 1
+  beta1, beta2 = config['beta1'], config['beta2']
+  lr, epsilon = config['learning_rate'], config['epsilon']
+  m,v = config['v'], config['a']
+
+  #First moment update (momentum-like)
+  m = beta1 * m + (1- beta1) * dw
+
+  #Second moment update (gradient normalization)
+  v = beta2 * v + (1 - beta2) * (dw ** 2)
+
+  #Bias correction in moments
+  m_hat = m / (1 - beta1 ** t)
+  v_hat = v / (1 - beta2 ** t)
+
+  #Gradient step
+  next_w = w - (lr * m_hat) / (np.sqrt(v_hat) + epsilon)
+
+  # Store updated values in config
+  config['v'] = m
+  config['a'] = v
+  config['t'] = t
 
   # ================================================================ #
   # END YOUR CODE HERE
