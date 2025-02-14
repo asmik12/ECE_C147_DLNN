@@ -209,7 +209,7 @@ class FullyConnectedNet(object):
       self.params[f"W{i}"] = np.random.normal(0, weight_scale, (hidden_dims[i-1], hidden_dims[i]))
       self.params[f"b{i}"] = np.zeros(hidden_dims[i])
 
-      if self.use_batchnorm:         # If self.use_batchnorm is true
+      if self.use_batchnorm and i < num_layers-1:         # If self.use_batchnorm is true
         self.params[f"gamma{i}"] = np.ones(hidden_dims[i])      # Initialize the gammas of each layer to 1 
         self.params[f"beta{i}"] = np.zeros(hidden_dims[i])      # Initialize the bets of each layer to 0
 
@@ -280,12 +280,11 @@ class FullyConnectedNet(object):
       for i in range(1, num_layers+1):
         # Unpacking parameters
         W, b = self.params[f"W{i}"], self.params[f"b{i}"]
-        gamma, beta = self.params[f"gamma{i}"], self.params[f"beta{i}"]
-        
         #Computing forward pass
         if i != num_layers:
+          gamma, beta = self.params[f"gamma{i}"], self.params[f"beta{i}"]
           if self.use_dropout:
-            l, c = affine_batchnorm_relu_dropout_forward(last_output, W, b, gamma, beta, self.bn_params[i-1], dropout_params=self.dropout_param)
+            l, c = affine_batchnorm_relu_dropout_forward(last_output, W, b, gamma, beta, self.bn_params[i-1], dropout_param=self.dropout_param)
           else:
             l,c = affine_batchnorm_relu_forward(last_output, W, b, gamma, beta, self.bn_params[i-1])
 
