@@ -202,7 +202,8 @@ class FullyConnectedNet(object):
     # ================================================================ #
     
     hidden_dims.append(num_classes)
-    hidden_dims.insert(0, input_dim)
+    #hidden_dims.insert(0, input_dim)
+    hidden_dims = [input_dim] + hidden_dims
     num_layers = len(hidden_dims)
 
     for i in range(1, num_layers):
@@ -276,7 +277,6 @@ class FullyConnectedNet(object):
     last_output = X
     caches = []
     if self.use_batchnorm:
-
       for i in range(1, num_layers+1):
         # Unpacking parameters
         W, b = self.params[f"W{i}"], self.params[f"b{i}"]
