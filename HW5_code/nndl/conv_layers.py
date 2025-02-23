@@ -296,8 +296,12 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
   #   You may find it useful to use the batchnorm forward pass you 
   #   implemented in HW #4.
   # ================================================================ #
-  
-  
+  N, C, H, W = x.shape
+  x_reshaped = x.transpose(0,2,3,1)
+  x_reshaped = x_reshaped.reshape(-1, C) # N * H * W, C
+  out_reshaped, cache = batchnorm_forward(x_reshaped, gamma, beta, bn_param)
+  out = out_reshaped.reshape(N, H, W, C)
+  out.transpose(0,3,1,2)
 
   # ================================================================ #
   # END YOUR CODE HERE
