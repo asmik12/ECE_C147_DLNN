@@ -37,6 +37,12 @@ def affine_forward(x, w, b):
   #   assignments.
   # ================================================================ #
 
+  #reshape the input array x to a 2D array of shape (N, D)
+  N = x.shape[0]
+  x_reshaped = x.reshape(N, -1) #Flattens the input
+
+  #Compute the affine forward pass (wx+b)
+  out = np.dot(x_reshaped, w) + b
 
   # ================================================================ #
   # END YOUR CODE HERE
@@ -69,6 +75,21 @@ def affine_backward(dout, cache):
   #   Calculate the gradients for the backward pass.
   # ================================================================ #
 
+  # dout is N x M
+  # dx should be N x d1 x ... x dk; it relates to dout through multiplication with w, which is D x M
+  # dw should be D x M; it relates to dout through multiplication with x, which is N x D after reshaping
+  # db should be M; it is just the sum over dout examples
+
+  x, w, b = cache
+
+  #Reshaping x to (N,D) so that computation becomes easier
+  N = x.shape[0]
+  x_reshaped = x.reshape(N, -1)
+  
+  #Computing the gradients
+  dx = np.dot(dout, w.T).reshape(x.shape)   # Gradient wrt x
+  dw = np.dot(x_reshaped.T, dout)           # Gradient wrt w
+  db = np.sum(dout, axis=0)                 # Gradient wrt b (biases)
 
   # ================================================================ #
   # END YOUR CODE HERE
@@ -92,6 +113,7 @@ def relu_forward(x):
   #   Implement the ReLU forward pass.
   # ================================================================ #
 
+  out = np.maximum(x, 0) #ReLu activation function: max(0, x)
 
   # ================================================================ #
   # END YOUR CODE HERE
@@ -119,6 +141,8 @@ def relu_backward(dout, cache):
   #   Implement the ReLU backward pass
   # ================================================================ #
 
+  #ReLU directs linearly to those > 0
+  dx = dout * (x > 0)
 
   # ================================================================ #
   # END YOUR CODE HERE
@@ -173,7 +197,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
   running_var = bn_param.get('running_var', np.zeros(D, dtype=x.dtype))
 
   out, cache = None, None
-  #if mode == 'train':
+  if mode == 'train':
     
     # ================================================================ #
     # YOUR CODE HERE:
@@ -186,13 +210,23 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     #         the 'cache' variable.
     # ================================================================ #
 
+    sample_mean = np.mean(x, axis=0)          # Compute the sample mean
+    sample_var = np.var(x, axis=0)       # Compute the sample variance
+
+    x_normalized = (x-sample_mean)/np.sqrt(sample_var + eps)   # Normalize the unit activations
+    out = gamma * x_normalized + beta   # Scale and shift the normalized activations
+
+    running_mean = momentum * running_mean + (1 - momentum) * sample_mean     # Updating running mean
+    running_var = momentum * running_var + (1 - momentum) * sample_var        # Updating running var
+
+    cache = (x, x_normalized, sample_mean, sample_var, gamma, beta, eps) # DOUBT: Do we need all this?
 
 
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
   
-  #elif mode == 'test':
+  elif mode == 'test':
         
     # ================================================================ #
     # YOUR CODE HERE:
@@ -200,14 +234,15 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     #   the running mean and variance, and then scale and shift appropriately.
     #   Store the output as 'out'.
     # ================================================================ #
-
+    x_normalized = (x-running_mean)/np.sqrt(running_var + eps)    # Normalizing using running mean and variance
+    out = gamma * x_normalized + beta 
 
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
     
-  #else:
-    #raise ValueError('Invalid forward batchnorm mode "%s"' % mode)
+  else:
+    raise ValueError('Invalid forward batchnorm mode "%s"' % mode)
 
   # Store the updated running means back into bn_param
   bn_param['running_mean'] = running_mean
@@ -239,6 +274,24 @@ def batchnorm_backward(dout, cache):
   #   Implement the batchnorm backward pass, calculating dx, dgamma, and dbeta.
   # ================================================================ #
 
+  x, x_normalized, sample_mean, sample_var, gamma, beta, eps = cache      # Unpacking the variables
+  N, D = dout.shape
+
+  dbeta = np.sum(dout, axis = 0)                    # dbeta is the same as dL/dy = dout
+  dgamma = np.sum(dout * x_normalized, axis = 0)    # dgamma is dout multiplied by the other wire (x_normalized)
+
+  # Gradient wrt x_normalized
+  dx_normalized = dout * gamma
+
+  # Gradient wrt sample_var
+  temp = -0.5 * 1/(sample_var + eps)**1.5 * (x - sample_mean) * dx_normalized
+  dsample_var = np.sum(temp, axis = 0)
+
+  #Gradient wrt sample mean
+  dsample_mean = -1/np.sqrt(sample_var+eps) * np.sum(dx_normalized, axis=0)
+
+  #Gradient wrt x
+  dx = 1/np.sqrt(sample_var+ eps) * dx_normalized + 2*(x - sample_mean)/N * dsample_var + 1/N * dsample_mean
 
   # ================================================================ #
   # END YOUR CODE HERE
@@ -273,7 +326,7 @@ def dropout_forward(x, dropout_param):
   out = None
   cache=None
 
-  #if mode == 'train':
+  if mode == 'train':
     # ================================================================ #
     # YOUR CODE HERE:
     #   Implement the dropout forward pass during training time.  
@@ -281,18 +334,23 @@ def dropout_forward(x, dropout_param):
     #   dropout mask as the variable mask.
     # ================================================================ #
 
+    # Create a dropout mask (1 with probability p, 0 with probability 1-p)
+    mask = (np.random.rand(*x.shape) < p)/p   # normalization by p for inverted dropout
+    out = x * mask      # Applying dropout mask
+
 
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
     
-  #elif mode == 'test':
+  elif mode == 'test':
     
     # ================================================================ #
     # YOUR CODE HERE:
     #   Implement the dropout forward pass during test time.
     # ================================================================ #
 
+    out = x # no dropouts in test mode
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -315,22 +373,21 @@ def dropout_backward(dout, cache):
   mode = dropout_param['mode']
   
   dx = None
-  #if mode == 'train':
+  if mode == 'train':
     # ================================================================ #
     # YOUR CODE HERE:
     #   Implement the dropout backward pass during training time.
     # ================================================================ #
-
-    
+    dx = dout * mask
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
-  #elif mode == 'test':
+  elif mode == 'test':
     # ================================================================ #
     # YOUR CODE HERE:
     #   Implement the dropout backward pass during test time.
     # ================================================================ #
-
+    dx = dout
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
