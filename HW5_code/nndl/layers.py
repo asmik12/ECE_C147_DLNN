@@ -173,7 +173,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
   running_var = bn_param.get('running_var', np.zeros(D, dtype=x.dtype))
 
   out, cache = None, None
-  if mode == 'train':
+  #if mode == 'train':
     
     # ================================================================ #
     # YOUR CODE HERE:
@@ -192,7 +192,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     # END YOUR CODE HERE
     # ================================================================ #
   
-  elif mode == 'test':
+  #elif mode == 'test':
         
     # ================================================================ #
     # YOUR CODE HERE:
@@ -206,8 +206,8 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     # END YOUR CODE HERE
     # ================================================================ #
     
-  else:
-    raise ValueError('Invalid forward batchnorm mode "%s"' % mode)
+  #else:
+    #raise ValueError('Invalid forward batchnorm mode "%s"' % mode)
 
   # Store the updated running means back into bn_param
   bn_param['running_mean'] = running_mean
@@ -271,8 +271,9 @@ def dropout_forward(x, dropout_param):
 
   mask = None
   out = None
+  cache=None
 
-  if mode == 'train':
+  #if mode == 'train':
     # ================================================================ #
     # YOUR CODE HERE:
     #   Implement the dropout forward pass during training time.  
@@ -285,7 +286,7 @@ def dropout_forward(x, dropout_param):
     # END YOUR CODE HERE
     # ================================================================ #
     
-  elif mode == 'test':
+  #elif mode == 'test':
     
     # ================================================================ #
     # YOUR CODE HERE:
@@ -314,7 +315,7 @@ def dropout_backward(dout, cache):
   mode = dropout_param['mode']
   
   dx = None
-  if mode == 'train':
+  #if mode == 'train':
     # ================================================================ #
     # YOUR CODE HERE:
     #   Implement the dropout backward pass during training time.
@@ -324,7 +325,7 @@ def dropout_backward(dout, cache):
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
-  elif mode == 'test':
+  #elif mode == 'test':
     # ================================================================ #
     # YOUR CODE HERE:
     #   Implement the dropout backward pass during test time.

@@ -46,7 +46,35 @@ def conv_forward_naive(x, w, b, conv_param):
   #   Hint: to pad the array, you can use the function np.pad.
   # ================================================================ #
   
+  #unpacking the parameters
+  pad_width, stride = conv_param['pad'], conv_param['stride']
+  N, C, H, W = x.shape
+  F, C, HH, WW = w.shape
+
+  #pad the input
+  x_padded = np.pad(x, ((0,0), (0,0), (pad, pad), (pad, pad)), mode='constant')
+
+  #computing output dimensions
+  out_h = 1 + (H + 2 * pad - HH) // stride
+  out_w = 1 + (W + 2 * pad - WW) // stride
+  out = np.zeros((N, F, out_h, out_w))      # initializing output array
+
+  #implementing convolution
   
+  for n in range(N):  # Iterate over each input sample
+        for f in range(F):  # Iterate over each filter
+            for i in range(out_h):
+                for j in range(out_w):
+                    # Extract region of interest
+                    h_start = i * stride
+                    h_end = h_start + HH
+                    w_start = j * stride
+                    w_end = w_start + WW
+                    
+                    region = x_padded[n, :, h_start:h_end, w_start:w_end]
+                    
+                    # Perform convolution (element-wise multiplication and summation)
+                    out[n, f, i, j] = np.sum(region * w[f]) + b[f]
 
   # ================================================================ #
   # END YOUR CODE HERE
@@ -84,6 +112,48 @@ def conv_backward_naive(dout, cache):
   #   Calculate the gradients: dx, dw, and db.
   # ================================================================ #
 
+  x, w, b, conv_param = cache
+  stride, pad = conv_param['stride'], conv_param['pad']
+
+  #Extract shapes
+  N, C, H, W = x.shape
+  F, _, HH, WW = w.shape
+  _,_,out_h, out_w = dout.shape
+
+  #Initialize gradients
+  dx = np.zeros_like(x)
+  dw = np.zeros_like(w)
+  db = np.zeros_like(b)
+
+  #Pad the input and its gradient
+  x_padded = np.pad(x, ((0, 0), (0, 0), (pad, pad), (pad, pad)), mode='constant')
+  dx_padded = np.pad(dx, ((0, 0), (0, 0), (pad, pad), (pad, pad)), mode='constant')
+
+  #Compute db - sum over batch, height and width
+  db = np.sum(dout, axis=(0,2,3))
+
+  # Compute dw (weight gradient) & dx (input gradient)
+  for n in range(N):  # Loop over each input in the batch
+    for f in range(F):  # Loop over each filter
+      for i in range(out_h):  # Loop over output height
+        h_start = i * stride
+        h_end = h_start + HH
+
+        for j in range(out_w):  # Loop over output width
+          w_start = j * stride
+          w_end = w_start + WW
+
+          # Extract the local region of x_padded
+          region = x_padded[n, :, h_start:h_end, w_start:w_end]
+
+          # Compute dw (Gradient of loss w.r.t. filter weights)
+          dw[f] += region * dout[n, f, i, j]
+
+          # Compute dx_padded (Gradient of loss w.r.t. input)
+          dx_padded[n, :, h_start:h_end, w_start:w_end] += w[f] * dout[n, f, i, j]
+
+    # Remove padding from dx
+    dx = dx_padded[:, :, pad:H + pad, pad:W + pad]
 
   # ================================================================ #
   # END YOUR CODE HERE
@@ -113,6 +183,30 @@ def max_pool_forward_naive(x, pool_param):
   # YOUR CODE HERE:
   #   Implement the max pooling forward pass.
   # ================================================================ #
+
+  #unpacking the parameters
+  N, C, H, W = x.shape
+  pool_height, pool_width = pool_param['pool_height'], pool_param['pool_width']
+  stride = pool_param['stride']
+
+  #computing output dimensions
+  out_h = 1 + (H - pool_height)//stride
+  out_w = 1 + (W- pool_width)//stride
+  out = np.zeros((N, C, out_h, out_w))      # initializing output array
+
+  #implementing convolution
+  
+  for n in range(N):  # Iterate over each input sample
+    for c in range(C):
+      for i in range(out_h):
+          for j in range(out_w):
+              # Extract region of interest
+              h_start = i * stride
+              h_end = h_start + pool_height
+              w_start = j * stride
+              w_end = w_start + pool_width
+              
+              out[n, c, i, j] = np.max(x[n, c, h_start:h_end, w_start:w_end])
 
 
   # ================================================================ #
