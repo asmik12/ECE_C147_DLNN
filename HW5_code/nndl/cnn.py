@@ -61,7 +61,24 @@ class ThreeLayerConvNet(object):
     #         standard deviation given by weight_scale.
     # ================================================================ #
 
+    C, H, W = input_dim
+    self.params['W1'] = np.random.normal(0, weight_scale, (num_filters, C, filter_size, filter_size))
+    self.params['b1'] = np.zeros(num_filters)
 
+    # Assuming output size of conv layer (after padding and stride)
+    # Output shape after conv: (num_filters, H, W)
+    conv_out_h = (H - filter_size + 2 * ((filter_size - 1) // 2)) // 1 + 1
+    conv_out_w = (W - filter_size + 2 * ((filter_size - 1) // 2)) // 1 + 1
+
+    # After max pool layer
+    pool_out_h = conv_out_h // 2
+    pool_out_w = conv_out_w // 2
+
+    self.params['W2'] = np.random.normal(0, weight_scale, (num_filters * pool_out_h * pool_out_w, hidden_dim))
+    self.params['b2'] = np.zeros(hidden_dim)
+    
+    self.params['W3'] = np.random.normal(0, weight_scale, (hidden_dim, num_classes))
+    self.params['b3'] = np.zeros(num_classes)
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -96,6 +113,9 @@ class ThreeLayerConvNet(object):
     #   scores as the variable "scores".
     # ================================================================ #
     
+    out_conv, conv_cache = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)  # Apply conv
+    out_relu, relu_cache = affine_relu_forward(out_conv, W2, b2)
+    scores, affine_cache = affine_forward(out_relu, W3, b3)
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -112,9 +132,15 @@ class ThreeLayerConvNet(object):
     #   self.params[k] will be grads[k]).  Store the loss as "loss", and
     #   don't forget to add regularization on ALL weight matrices.
     # ================================================================ #
+   
+    loss, softmax_cache = softmax_loss(scores, y)  # Apply softmax
+    loss += 0.5 * self.reg*(np.linalg.norm(W1)**2 + np.linalg.norm(W2)**2 + np.linalg.norm(W3)**2)
 
-    
-
+    # Computing the backward pass:
+    dout = softmax_cache
+    dout, grads['W3'], grads['b3'] = affine_backward(dout, affine_cache) 
+    dout, grads['W2'], grads['b2'] = affine_relu_backward(dout, relu_cache)
+    dout, grads['W1'], grads['b1'] = conv_relu_pool_backward(dout, conv_cache)  # Backprop to conv layer
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
